@@ -1,0 +1,4 @@
+{
+  "sql": "mysql://luxyva:xxxx@localhost/liberty?timeout=60&serverTimezone=Shanghai",
+  "redis": "redis://127.0.0.1"
+}
