@@ -1,0 +1,25 @@
+[package]
+name = "liberty"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+axum = { version = "0.6.0-rc.4", features = ["multipart", "headers"] }
+axum-extra = "0.3.7"
+tokio = { version = "1.17.0", features = ["full"] }
+tower-http = "0.3.4"
+tower = { version = "0.4.13", features = ["full"] }
+tracing = "0.1.36"
+tracing-subscriber = "0.3.11"
+sea-orm = { version = "0.10.2", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros"] }
+sqlx = {version = "0.5.13", features = ["mysql",'runtime-tokio-native-tls', "macros", "chrono"]}
+serde = { version = "1.0.143", features = ["derive"] }
+serde_json = "1.0.83"
+rs-snowflake = "0.6.0"
+jsonwebtoken = "8.1.1"
+async-trait = "0.1.57"
+chrono = "0.4"
+log = "0.4"
+redis = { version = "0.21.5", features = ["tokio-comp"] }
+axum-prometheus = "0.1.0"
