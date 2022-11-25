@@ -17,11 +17,5 @@ pub async fn db_conn() -> DatabaseConnection {
     let db = Database::connect(opt)
         .await
         .expect("Database connection failed");
-    // let pool = MySqlPoolOptions::new()
-    //     .max_connections(10)
-    //     .connect_timeout(Duration::from_secs(3))
-    //     .connect("mysql://living:liqiang123@@liqiang-test-liberty.mysql.rds.aliyuncs.com/poem?useunicode=true&characterEncoding=utf8")
-    //     .await
-    //     .expect("can connect to database");
     db
 }

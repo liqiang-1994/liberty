@@ -10,7 +10,7 @@ mod service;
 mod util;
 
 use axum::http::StatusCode;
-use axum::middleware::AddExtension;
+use axum::middleware::{AddExtension, from_extractor};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{response, Extension, Router};
@@ -20,6 +20,8 @@ use serde_json::{json, Value};
 use snowflake::{SnowflakeIdBucket, SnowflakeIdGenerator};
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
+use axum::extract::extractor_middleware;
+use once_cell::sync::Lazy;
 
 use crate::comm::RedisState;
 use crate::db::db_conn;
@@ -32,6 +34,12 @@ use sea_orm::DbConn;
 use sqlx::{MySql, Pool};
 use tower::{limit::ConcurrencyLimitLayer, ServiceBuilder};
 use tracing_subscriber::util::SubscriberInitExt;
+use crate::model::jwt::{authorize, Claims, JwtKey, protected};
+
+static KEY: Lazy<JwtKey> = Lazy::new(|| {
+    let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    JwtKey::new(secret.as_bytes())
+});
 
 #[tokio::main]
 async fn main() {
@@ -56,13 +64,14 @@ async fn main() {
 
 fn init_app(pool: DbConn, redis: Arc<Mutex<Client>>) -> Router {
     let api = Router::new()
-       // .nest("/search", tag_api())
+        .nest("/auth", auth_api())
         .nest("/tag", tag_api());
 
     let app = Router::new().nest("/api", api).layer(
         ServiceBuilder::new()
             .layer(ConcurrencyLimitLayer::new(10))
             .layer(Extension(pool))
+            .layer(from_extractor::<Claims>())
             .layer((Extension(redis))),
     );
     app
@@ -75,8 +84,16 @@ fn init_app(pool: DbConn, redis: Arc<Mutex<Client>>) -> Router {
 fn tag_api() -> Router {
     Router::new()
         .route("/tag", post(create_tag))
+        .route("/index", get(index))
         // .route("/upload", post(upload))
         // .route("/test", post(index))
+}
+
+fn auth_api() -> Router {
+    Router::new()
+        .route("/protected", get(protected))
+        .route("/authorize", post(authorize))
+    // .route("/test", post(index))
 }
 
 async fn index(client: Extension<RedisState>) -> response::Json<Value> {
