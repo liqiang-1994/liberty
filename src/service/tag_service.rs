@@ -6,7 +6,6 @@ use axum::Json;
 use sea_orm::{DatabaseConnection, DbConn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::{MySql, Pool};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
@@ -44,18 +43,16 @@ pub async fn create_tag(
                 (StatusCode::OK, Json(CreateResp { ok: true }))
             }
         },
-        None => {
-            match save_tag(conn, req).await {
-                Ok(result) => {
-                    println!("{:#?}", result);
-                    (StatusCode::OK, Json(CreateResp { ok: true }))
-                }
-                Err(e) => {
-                    println!("{:#?}", e);
-                    (StatusCode::OK, Json(CreateResp { ok: true }))
-                }
+        None => match save_tag(conn, req).await {
+            Ok(result) => {
+                println!("{:#?}", result);
+                (StatusCode::OK, Json(CreateResp { ok: true }))
             }
-        }
+            Err(e) => {
+                println!("{:#?}", e);
+                (StatusCode::OK, Json(CreateResp { ok: true }))
+            }
+        },
     }
 }
 

@@ -1,6 +1,6 @@
-use std::borrow::Cow;
 use chrono::Local;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Response<T = ()> {
@@ -16,13 +16,13 @@ pub struct Page {
     pub page_size: i64,
 }
 
-impl <T:Serialize> Response<T> {
+impl<T: Serialize> Response<T> {
     pub fn new(code: Option<i32>) -> Self {
         Self {
             code: code.unwrap_or(200),
             msg: None,
             data: None,
-            timestamp: Local::now().timestamp_millis()
+            timestamp: Local::now().timestamp_millis(),
         }
     }
 

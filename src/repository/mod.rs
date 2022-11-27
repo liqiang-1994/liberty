@@ -1,2 +1,2 @@
-pub mod tag_repo;
 pub mod search_repo;
+pub mod tag_repo;

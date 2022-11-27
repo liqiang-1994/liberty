@@ -1,7 +1,10 @@
 #![feature(once_cell)]
 #![feature(generic_associated_types)]
 
+extern crate core;
+
 mod comm;
+mod config;
 mod db;
 mod entity;
 mod model;
@@ -9,32 +12,34 @@ mod repository;
 mod service;
 mod util;
 
+use axum::extract::extractor_middleware;
 use axum::http::StatusCode;
-use axum::middleware::{AddExtension, from_extractor};
+use axum::middleware::{from_extractor, AddExtension};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{response, Extension, Router};
 use log::info;
+use once_cell::sync::Lazy;
 use redis::{Client, Commands};
 use serde_json::{json, Value};
 use snowflake::{SnowflakeIdBucket, SnowflakeIdGenerator};
+use std::fs::File;
+use std::io::Read;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
-use axum::extract::extractor_middleware;
-use once_cell::sync::Lazy;
 
 use crate::comm::RedisState;
 use crate::db::db_conn;
 //use crate::service::search_service::search_key;
+use crate::config::Config;
+use crate::model::jwt::{authorize, protected, Claims, JwtKey};
 use crate::service::storage_service::upload;
-use crate::service::tag_service::{create_tag};
+use crate::service::tag_service::create_tag;
 use crate::util::shutdown::shutdown_signal;
 use sea_orm;
 use sea_orm::DbConn;
-use sqlx::{MySql, Pool};
 use tower::{limit::ConcurrencyLimitLayer, ServiceBuilder};
 use tracing_subscriber::util::SubscriberInitExt;
-use crate::model::jwt::{authorize, Claims, JwtKey, protected};
 
 static KEY: Lazy<JwtKey> = Lazy::new(|| {
     let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
@@ -47,8 +52,21 @@ async fn main() {
         .with_max_level(tracing::Level::DEBUG)
         .with_test_writer()
         .init();
-    let pool = db_conn().await;
-    let redis_url = format!("redis://:{}@{}", "", "127.0.0.1:6379");
+    let mut file = match File::open("conf.toml") {
+        Ok(f) => f,
+        Err(e) => panic!("Parse config exception:{}", e),
+    };
+    let mut config_str = String::new();
+    match file.read_to_string(&mut config_str) {
+        Ok(str) => str,
+        Err(e) => panic!("Read config exception:{}", e),
+    };
+    let config: Config = toml::from_str(&config_str).unwrap();
+    let pool = db_conn(&config.postgres).await;
+    let redis_url = format!(
+        "redis://:{}@{}:{}",
+        &config.redis.password, &config.redis.url, &config.redis.port
+    );
     let redis = Arc::new(Mutex::new(
         Client::open(redis_url).expect("invalid connection URL"),
     ));
@@ -85,8 +103,8 @@ fn tag_api() -> Router {
     Router::new()
         .route("/tag", post(create_tag))
         .route("/index", get(index))
-        // .route("/upload", post(upload))
-        // .route("/test", post(index))
+    // .route("/upload", post(upload))
+    // .route("/test", post(index))
 }
 
 fn auth_api() -> Router {

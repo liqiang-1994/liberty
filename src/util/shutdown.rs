@@ -1,4 +1,3 @@
-
 #[cfg(unix)]
 pub async fn shutdown_signal() {
     use std::io;

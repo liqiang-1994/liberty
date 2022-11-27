@@ -1,15 +1,17 @@
+use crate::config::{Config, Postgres};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
-use sqlx::mysql::MySqlPoolOptions;
-use sqlx::{MySql, Pool};
 use std::time::Duration;
 
-pub async fn db_conn() -> DatabaseConnection {
-    let mut opt =
-        ConnectOptions::new("postgresql://user:pass@host/db".to_owned());
+pub async fn db_conn(cfg: &Postgres) -> DatabaseConnection {
+    let url = format!(
+        "{}://{}:{}@{}:{}/{}",
+        cfg.driver, cfg.username, cfg.password, cfg.url, cfg.port, cfg.db
+    );
+    let mut opt = ConnectOptions::new(url);
     opt.max_connections(100)
         .min_connections(5)
-        .connect_timeout(Duration::from_secs(8))
-        .acquire_timeout(Duration::from_secs(8))
+        .connect_timeout(Duration::from_secs(30))
+        .acquire_timeout(Duration::from_secs(30))
         .idle_timeout(Duration::from_secs(8))
         .max_lifetime(Duration::from_secs(10))
         .sqlx_logging(true)

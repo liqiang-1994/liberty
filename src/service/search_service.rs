@@ -5,7 +5,6 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use log::info;
-use sqlx::{MySql, Pool};
 use std::fmt::Debug;
 //use crate::repository::search_repo::search_by_key;
 

@@ -1,8 +1,6 @@
 use crate::model::search::{KeySearch, PoemResp};
 use crate::service::tag_service::Poem;
 use axum::Json;
-use sqlx::mysql::MySqlQueryResult;
-use sqlx::{Error, MySql, Pool};
 
 // pub async fn search_by_key(pool: &Pool<MySql>, key : KeySearch) -> Result<Vec<PoemResp>, sqlx::Error> {
 //     let result = sqlx::query_as!(PoemResp,

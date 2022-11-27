@@ -1,7 +1,5 @@
-use serde::{Serialize, Deserialize};
-use sqlx::{Error, FromRow, Row};
-use sqlx::mysql::MySqlRow;
 use crate::model::response::Page;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct KeySearch {
@@ -10,7 +8,7 @@ pub struct KeySearch {
     pub page: Page,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, sqlx::FromRow)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PoemResp {
     pub id: String,
     pub author: String,

@@ -1,38 +1,38 @@
-use std::fmt::{Display, Formatter};
-use axum::{async_trait, Json};
-use axum::TypedHeader;
+use crate::KEY;
 use axum::extract::{FromRequest, RequestParts};
 use axum::http::{StatusCode, Uri};
 use axum::response::{IntoResponse, Redirect, Response};
-use headers::Authorization;
+use axum::TypedHeader;
+use axum::{async_trait, Json};
 use headers::authorization::Bearer;
-use jsonwebtoken::{decode, DecodingKey, encode, EncodingKey, Header, Validation};
+use headers::Authorization;
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use crate::KEY;
+use std::fmt::{Display, Formatter};
 
 pub struct JwtKey {
     encoding: EncodingKey,
-    decoding: DecodingKey
+    decoding: DecodingKey,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     sub: String,
     exp: usize,
-    company: String
+    company: String,
 }
 
 #[derive(Debug, Serialize)]
 pub struct AuthBody {
     access_token: String,
-    token_type: String
+    token_type: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct AuthPayload {
     client_id: String,
-    client_secret: String
+    client_secret: String,
 }
 
 #[derive(Debug)]
@@ -47,7 +47,7 @@ impl JwtKey {
     pub fn new(secret: &[u8]) -> Self {
         Self {
             encoding: EncodingKey::from_secret(secret),
-            decoding: DecodingKey::from_secret(secret)
+            decoding: DecodingKey::from_secret(secret),
         }
     }
 }
@@ -70,7 +70,7 @@ impl Display for Claims {
 #[async_trait]
 impl<S> FromRequest<S> for Claims
 where
-    S: Send +Sync
+    S: Send + Sync,
 {
     type Rejection = AuthError;
 
@@ -98,9 +98,7 @@ impl IntoResponse for AuthError {
             AuthError::MissingCredentials => (StatusCode::BAD_REQUEST, "Missing credentials"),
             AuthError::TokenCreation => (StatusCode::INTERNAL_SERVER_ERROR, "Token creation error"),
         };
-        let body = Json(json!({
-                "error": message
-            }));
+        let body = Json(json!({ "error": message }));
         (status, body).into_response()
     }
 }
@@ -111,7 +109,7 @@ pub async fn authorize(Json(payload): Json<AuthPayload>) -> Result<Json<AuthBody
     }
 
     if payload.client_id != "1" || payload.client_secret != "2" {
-        return Err(AuthError::WrongCredentials)
+        return Err(AuthError::WrongCredentials);
     }
 
     let claims = Claims {
@@ -120,14 +118,11 @@ pub async fn authorize(Json(payload): Json<AuthPayload>) -> Result<Json<AuthBody
         // Mandatory expiry time as UTC timestamp
         exp: 2000000000, // May 2033
     };
-    let token = encode(&Header::default(), &claims, &KEY.encoding)
-        .map_err(|_| AuthError::TokenCreation)?;
+    let token =
+        encode(&Header::default(), &claims, &KEY.encoding).map_err(|_| AuthError::TokenCreation)?;
     Ok(Json(AuthBody::new(token)))
 }
 
 pub async fn protected(claims: Claims) -> Result<String, AuthError> {
-    Ok(format!(
-        "Welcome to liberty :)\nYour data:\n{}",
-        claims
-    ))
+    Ok(format!("Welcome to liberty :)\nYour data:\n{}", claims))
 }

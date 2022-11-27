@@ -1,6 +1,6 @@
 use chrono::{FixedOffset, Local};
 use sea_orm::entity::prelude::*;
-use sea_orm::{ActiveModelBehavior, ActiveValue,ActiveModelTrait};
+use sea_orm::{ActiveModelBehavior, ActiveModelTrait, ActiveValue};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
@@ -9,7 +9,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub name: Option<String>,
-    pub create_time: Option<DateTime>
+    pub create_time: Option<DateTime>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
