@@ -1,4 +1,4 @@
-use crate::config::{Config, Postgres};
+use crate::model::config::{Config, Postgres};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::time::Duration;
 

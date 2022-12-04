@@ -4,20 +4,19 @@
 extern crate core;
 
 mod comm;
-mod config;
 mod db;
 mod entity;
 mod model;
 mod repository;
 mod service;
-mod util;
+mod utils;
 
 use axum::extract::extractor_middleware;
 use axum::http::StatusCode;
-use axum::middleware::{from_extractor, AddExtension};
+use axum::middleware::{AddExtension, from_extractor};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
-use axum::{response, Extension, Router};
+use axum::{Extension, response, Router};
 use log::info;
 use once_cell::sync::Lazy;
 use redis::{Client, Commands};
@@ -27,19 +26,26 @@ use std::fs::File;
 use std::io::Read;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use reqwest_retry::policies::ExponentialBackoff;
+use reqwest_retry::RetryTransientMiddleware;
+use reqwest_tracing::TracingMiddleware;
 
 use crate::comm::RedisState;
 use crate::db::db_conn;
 //use crate::service::search_service::search_key;
-use crate::config::Config;
-use crate::model::jwt::{authorize, protected, Claims, JwtKey};
+use model::config::Config;
+use crate::model::jwt::{authorize, Claims, JwtKey, protected};
 use crate::service::storage_service::upload;
 use crate::service::tag_service::create_tag;
-use crate::util::shutdown::shutdown_signal;
+use crate::utils::shutdown::shutdown_signal;
 use sea_orm;
 use sea_orm::DbConn;
 use tower::{limit::ConcurrencyLimitLayer, ServiceBuilder};
+use tracing::instrument::WithSubscriber;
 use tracing_subscriber::util::SubscriberInitExt;
+use crate::utils::ip::parse_ip;
+use crate::utils::upload;
 
 static KEY: Lazy<JwtKey> = Lazy::new(|| {
     let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
@@ -62,6 +68,9 @@ async fn main() {
         Err(e) => panic!("Read config exception:{}", e),
     };
     let config: Config = toml::from_str(&config_str).unwrap();
+    upload::upload(&config);
+    upload::upload(&config);
+    let secret: String = config.map.secret;
     let pool = db_conn(&config.postgres).await;
     let redis_url = format!(
         "redis://:{}@{}:{}",
@@ -84,12 +93,18 @@ fn init_app(pool: DbConn, redis: Arc<Mutex<Client>>) -> Router {
     let api = Router::new()
         .nest("/auth", auth_api())
         .nest("/tag", tag_api());
+    let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
+    let client = ClientBuilder::new(reqwest::Client::new())
+        .with(TracingMiddleware::default())
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .build();
 
     let app = Router::new().nest("/api", api).layer(
         ServiceBuilder::new()
             .layer(ConcurrencyLimitLayer::new(10))
             .layer(Extension(pool))
             .layer(from_extractor::<Claims>())
+            .layer(Extension(client))
             .layer((Extension(redis))),
     );
     app
@@ -103,6 +118,7 @@ fn tag_api() -> Router {
     Router::new()
         .route("/tag", post(create_tag))
         .route("/index", get(index))
+        .route("/ip", get(parse_ip))
     // .route("/upload", post(upload))
     // .route("/test", post(index))
 }

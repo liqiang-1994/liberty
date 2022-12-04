@@ -1,0 +1,20 @@
+[postgres]
+driver   = "postgresql"
+url      = ""
+db       = ""
+port     = 5432
+username = ""
+password = ""
+
+[redis]
+url      = ""
+port     = 6379
+password = ""
+
+[map]
+secret   = ""
+
+[oss]
+access_key = ""
+secret_key = ""
+bucket_name = ""
