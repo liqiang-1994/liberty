@@ -7,3 +7,5 @@ pub mod t_poet;
 pub mod t_poetry;
 pub mod t_saying;
 pub mod t_tag;
+pub mod t_user;
+pub mod t_comment;
